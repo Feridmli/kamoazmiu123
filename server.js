@@ -101,8 +101,8 @@ app.post("/api/order", async (req, res) => {
         onChain: !!buyerAddress,
         status,
         image: image || null,
-        createdAt: now,
-        updatedAt: now,
+        createdat: now,
+        updatedat: now,
       },
       { onConflict: "orderHash" }
     );
@@ -124,7 +124,7 @@ app.get("/api/orders", async (req, res) => {
     const { data, error } = await supabase
       .from("orders")
       .select("*")
-      .order("createdAt", { ascending: false })
+      .order("createdat", { ascending: false })
       .limit(500);
 
     if (error) throw error;
@@ -153,7 +153,7 @@ app.post("/api/buy", async (req, res) => {
         onChain: true,
         buyerAddress: buyerAddress.toLowerCase(),
         status: "fulfilled",
-        updatedAt: new Date().toISOString(),
+        updatedat: new Date().toISOString(),
       })
       .eq("orderHash", orderHash)
       .select();
