@@ -1,0 +1,31 @@
+{
+  "name": "bearhustle-marketplace",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node server.js",
+    "sync": "node syncSeaportOrders.js",
+    "sync:metadata": "node syncNFTMetadata.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@opensea/seaport-js": "^2.0.2",
+    "ethers": "^5.7.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "nanoid": "^4.0.0",
+    "postgres": "^3.4.3",
+    "dotenv": "^16.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
