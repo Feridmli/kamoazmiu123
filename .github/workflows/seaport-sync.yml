@@ -1,36 +1,53 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
-
-name: Node.js Package
+name: Seaport & NFT Metadata Sync
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:        # Manual işə salmaq üçün
+  schedule:
+    - cron: "0 * * * *"     # Hər 1 saatda (Seaport Sync)
+    - cron: "*/5 * * * *"   # Hər 5 dəqiqədə (NFT Metadata Sync)
 
 jobs:
-  build:
+  sync:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm test
 
-  publish-gpr:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # ------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 20
-          registry-url: https://npm.pkg.github.com/
-      - run: npm ci
-      - run: npm publish
+
+      - name: Install dependencies
+        run: npm install
+
+      # ------------------------------
+      # 🚀 SAATDA BİR --> Seaport Order Sync
+      - name: Run ApeChain Seaport Sync (hourly)
+        if: github.event.schedule == '0 * * * *'
         env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NFT_CONTRACT_ADDRESS: ${{ secrets.NFT_CONTRACT_ADDRESS }}
+          SEAPORT_CONTRACT_ADDRESS: ${{ secrets.SEAPORT_CONTRACT_ADDRESS }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          APECHAIN_RPC: ${{ secrets.APECHAIN_RPC }}
+          FROM_BLOCK: ${{ secrets.FROM_BLOCK }}
+        run: |
+          echo "⏰ Running Seaport Sync (every 1 hour)"
+          node syncSeaportOrders.js
+
+      # ------------------------------
+      # 🚀 5 DƏQİQƏDƏ BİR --> NFT Metadata + Owner Sync
+      - name: Run NFT Metadata Sync (5 mins)
+        if: github.event.schedule == '*/5 * * * *'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NFT_CONTRACT_ADDRESS: ${{ secrets.NFT_CONTRACT_ADDRESS }}
+          APECHAIN_RPC: ${{ secrets.APECHAIN_RPC }}
+        run: |
+          echo "🔄 Running NFT Metadata Sync (every 5 minutes)"
+          node syncNFTMetadata.js
