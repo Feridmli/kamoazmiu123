@@ -2,7 +2,7 @@
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
-import fetch from "node-fetch"; // metadata üçün lazım
+import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -35,7 +35,7 @@ let providerIndex = 0;
 function getProvider() {
   const rpc = RPC_LIST[providerIndex % RPC_LIST.length];
   providerIndex++;
-  return new ethers.providers.JsonRpcProvider(rpc); // V5 uyğun
+  return new ethers.providers.JsonRpcProvider(rpc);
 }
 
 // -----------------------
@@ -60,7 +60,7 @@ async function processNFT(tokenId) {
     let tokenURI;
     let success = false;
 
-    // RPC fallback: əgər bir RPC işləmirsə, növbətiyə keç
+    // RPC fallback
     for (let i = 0; i < RPC_LIST.length; i++) {
       try {
         owner = await nftContract.ownerOf(tokenId);
@@ -76,10 +76,16 @@ async function processNFT(tokenId) {
 
     if (!success) throw new Error("All RPC endpoints failed");
 
+    // IPFS URL-i HTTP gateway-ə çevirmək
+    let tokenURI_HTTP = tokenURI;
+    if (tokenURI.startsWith("ipfs://")) {
+      tokenURI_HTTP = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+    }
+
     // Metadata fetch
     let name = null;
     try {
-      const metadataRes = await fetch(tokenURI);
+      const metadataRes = await fetch(tokenURI_HTTP);
       const metadata = await metadataRes.json();
       name = metadata.name || null;
     } catch (e) {
