@@ -18,12 +18,30 @@ const supabase = createClient(
 // 🔧 ENV
 // -----------------------
 const NFT_CONTRACT_ADDRESS = process.env.NFT_CONTRACT_ADDRESS;
-const APECHAIN_RPC = process.env.APECHAIN_RPC;
+
+// -----------------------
+// 🌐 RPC LIST
+// -----------------------
+const RPC_LIST = [
+  process.env.APECHAIN_RPC,
+  "https://rpc.apechain.com/http",
+  "https://apechain.drpc.org",
+  "https://33139.rpc.thirdweb.com",
+];
+
+let providerIndex = 0;
+
+// Funksiya: növbəti RPC ilə provider yaratmaq
+function getProvider() {
+  const rpc = RPC_LIST[providerIndex % RPC_LIST.length];
+  providerIndex++;
+  return new ethers.JsonRpcProvider(rpc);
+}
 
 // -----------------------
 // 🌐 Provider + Contract
 // -----------------------
-const provider = new ethers.JsonRpcProvider(APECHAIN_RPC);
+const provider = getProvider();
 
 const nftABI = [
   "function ownerOf(uint256 tokenId) view returns (address)",
@@ -38,9 +56,26 @@ const nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, nftABI, provider);
 // -----------------------
 async function processNFT(tokenId) {
   try {
-    const owner = await nftContract.ownerOf(tokenId);
-    const tokenURI = await nftContract.tokenURI(tokenId);
+    let owner;
+    let tokenURI;
+    let success = false;
 
+    // RPC fallback: əgər bir RPC işləmirsə, növbətiyə keç
+    for (let i = 0; i < RPC_LIST.length; i++) {
+      try {
+        owner = await nftContract.ownerOf(tokenId);
+        tokenURI = await nftContract.tokenURI(tokenId);
+        success = true;
+        break;
+      } catch (err) {
+        console.warn(`⚠️ RPC #${i + 1} failed for tokenId ${tokenId}: ${err.message}`);
+        nftContract.provider = getProvider();
+      }
+    }
+
+    if (!success) throw new Error("All RPC endpoints failed");
+
+    // Metadata fetch
     let name = null;
     try {
       const metadataRes = await fetch(tokenURI);
