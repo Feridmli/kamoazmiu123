@@ -35,13 +35,13 @@ let providerIndex = 0;
 function getProvider() {
   const rpc = RPC_LIST[providerIndex % RPC_LIST.length];
   providerIndex++;
-  return new ethers.JsonRpcProvider(rpc);
+  return new ethers.providers.JsonRpcProvider(rpc); // V5 uyğun
 }
 
 // -----------------------
 // 🌐 Provider + Contract
 // -----------------------
-const provider = getProvider();
+let provider = getProvider();
 
 const nftABI = [
   "function ownerOf(uint256 tokenId) view returns (address)",
@@ -49,7 +49,7 @@ const nftABI = [
   "function tokenURI(uint256 tokenId) view returns (string)"
 ];
 
-const nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, nftABI, provider);
+let nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, nftABI, provider);
 
 // -----------------------
 // 🔄 Process NFT
@@ -69,7 +69,8 @@ async function processNFT(tokenId) {
         break;
       } catch (err) {
         console.warn(`⚠️ RPC #${i + 1} failed for tokenId ${tokenId}: ${err.message}`);
-        nftContract.provider = getProvider();
+        provider = getProvider();
+        nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, nftABI, provider);
       }
     }
 
@@ -85,6 +86,7 @@ async function processNFT(tokenId) {
       console.warn(`⚠️ NFT #${tokenId} metadata fetch error:`, e.message);
     }
 
+    // Supabase-a yaz
     await supabase.from("nfts").upsert({
       token_id: tokenId.toString(),
       nft_contract: NFT_CONTRACT_ADDRESS,
